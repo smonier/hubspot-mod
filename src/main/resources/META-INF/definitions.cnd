@@ -1,0 +1,8 @@
+<jnt = 'http://www.jahia.org/jahia/nt/1.0'>
+<jmix = 'http://www.jahia.org/jahia/mix/1.0'>
+<hubnt = 'http://www.jahia.org/hubspot/nt/1.0'>
+<hubmix = 'http://www.jahia.org/hubspot/mix/1.0'>
+
+[hubmix:hubspot] > jmix:droppableContent, jmix:editorialContent mixin
+
+[hubnt:hubspotLeadForm] > jnt:content, mix:title, hubmix:hubspot
