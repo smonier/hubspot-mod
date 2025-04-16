@@ -6,3 +6,6 @@
 [hubmix:hubspot] > jmix:droppableContent, jmix:editorialContent mixin
 
 [hubnt:hubspotLeadForm] > jnt:content, mix:title, hubmix:hubspot
+
+[hubnt:hubspotFormComponent] > jnt:content, mix:title, hubmix:hubspot
+ - hubspotFormId (string, choicelist[hubspotFormsChoiceList])

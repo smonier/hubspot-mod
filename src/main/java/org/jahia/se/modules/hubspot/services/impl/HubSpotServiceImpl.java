@@ -1,6 +1,8 @@
 package org.jahia.se.modules.hubspot.services.impl;
 
 import org.jahia.se.modules.hubspot.services.HubSpotService;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +13,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component(
@@ -26,6 +30,11 @@ public class HubSpotServiceImpl implements HubSpotService {
 
     private String hubspotUrl;
     private String defaultAuthorization;
+    private String apiSchema;
+    private String apiUrl;
+    private String apiEndPoint;
+    private String formsEndPoint;
+    private String portalId;
 
     @Activate
     public void activate(Map<String, String> config) {
@@ -34,16 +43,25 @@ public class HubSpotServiceImpl implements HubSpotService {
             throw new IllegalArgumentException("HubSpot token is not configured.");
         }
 
-        String apiSchema = config.getOrDefault("hubspot.apiSchema", "https");
-        String apiUrl = config.get("hubspot.apiUrl");
-        String apiEndPoint = config.getOrDefault("hubspot.apiEndPoint", "/crm/v3/objects/contacts");
+        this.apiSchema = config.getOrDefault("hubspot.apiSchema", "https");
+        this.apiUrl = config.get("hubspot.apiUrl");
+        this.apiEndPoint = config.getOrDefault("hubspot.apiEndPoint", "/crm/v3/objects/contacts");
+        this.formsEndPoint = config.getOrDefault("hubspot.forms.apiEndPoint", "/forms/v2/forms");
+        this.portalId = config.get("hubspot.portalId");
 
         if (apiUrl == null || apiUrl.isEmpty()) {
             throw new IllegalArgumentException("HubSpot API URL is not configured.");
         }
 
-        defaultAuthorization = "Bearer " + token;
-        hubspotUrl = String.format("%s://%s%s", apiSchema, apiUrl, apiEndPoint);
+        this.portalId = config.get("hubspot.portalId");
+
+        if (portalId == null || portalId.isEmpty()) {
+            LOGGER.warn("HubSpot portalId is not configured. Embed code generation might fail.");
+            // But do NOT throw an exception
+        }
+
+        this.defaultAuthorization = "Bearer " + token;
+        this.hubspotUrl = String.format("%s://%s%s", apiSchema, apiUrl, apiEndPoint);
 
         LOGGER.info("Activated HubSpot Service with Base URL: {}", hubspotUrl);
     }
@@ -136,6 +154,51 @@ public class HubSpotServiceImpl implements HubSpotService {
         }
     }
 
+    @Override
+    public List<Map<String, Object>> getForms() throws Exception {
+        String fullUrl = getFormsEndpointUrl();
+
+        LOGGER.info("Calling HubSpot forms endpoint: {}", fullUrl);
+        LOGGER.info("Using token: {}", defaultAuthorization); // ⚠️ Remove this after debugging
+
+        HttpURLConnection connection = (HttpURLConnection) new URL(fullUrl).openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization", defaultAuthorization);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Accept", "application/json");
+
+        int responseCode = connection.getResponseCode();
+        LOGGER.info("Received response code from HubSpot: {}", responseCode);
+
+        if (responseCode == 403) {
+            LOGGER.error("Access forbidden (403) – likely due to missing `forms` scope or wrong endpoint.");
+            throw new RuntimeException("Failed to fetch forms: HTTP 403");
+        }
+
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+        StringBuilder responseBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            responseBuilder.append(line);
+        }
+
+        // 🔄 Parse response as JSONObject to access "results"
+        JSONObject jsonResponse = new JSONObject(responseBuilder.toString());
+        JSONArray formsArray = jsonResponse.getJSONArray("results");
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int i = 0; i < formsArray.length(); i++) {
+            JSONObject form = formsArray.getJSONObject(i);
+            Map<String, Object> formMap = new HashMap<>();
+            formMap.put("guid", form.optString("id")); // Note: it's "id", not "guid"
+            formMap.put("name", form.optString("name"));
+            result.add(formMap);
+        }
+
+        return result;
+    }
+
     private void handleErrorStream(HttpURLConnection connection) throws IOException {
         try (InputStream errorStream = connection.getErrorStream();
              BufferedReader errorReader = new BufferedReader(new InputStreamReader(errorStream, StandardCharsets.UTF_8))) {
@@ -150,5 +213,14 @@ public class HubSpotServiceImpl implements HubSpotService {
             LOGGER.error("Error response body: {}", errorResponse);
             throw new RuntimeException("Server returned an error: " + errorResponse);
         }
+    }
+
+    private String getFormsEndpointUrl() {
+        return String.format("%s://%s%s", apiSchema, apiUrl, formsEndPoint);
+    }
+
+    @Override
+    public String getPortalId() {
+        return portalId;
     }
 }

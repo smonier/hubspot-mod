@@ -1,0 +1,12 @@
+{
+  "name": "hubnt:hubspotFormComponent",
+  "fields": [
+    {
+      "name": "hubspotEmbedCode",
+      "selectorType": "CodeMirror",
+      "selectorOptionsMap": {
+        "mode": "javascript"
+      }
+    }
+  ]
+}

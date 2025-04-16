@@ -32,7 +32,9 @@ public class HubSpotAction extends Action {
     @Activate
     public void activate() {
         setName("hubspotAction");
+        setRequireAuthenticatedUser(false);
         setRequiredMethods("GET,POST");
+
     }
 
     @Reference(service = HubSpotService.class)
