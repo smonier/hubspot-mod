@@ -24,4 +24,21 @@ Le module utilise un fichier de configuration situé dans `src/main/resources/ME
 - `hubspot.secret` : Clé secrète HubSpot
 - `hubspot.token` : Token d'authentification HubSpot
 
-## Structure du projet
+## Prérequis
+
+- Jahia 8.x
+- Compte HubSpot avec accès API
+- Node.js et Yarn (pour le build frontend)
+
+## Installation
+
+1. Compilez le module avec Maven : `mvn clean install`
+2. Déployez le JAR généré dans Jahia
+3. Configurez les paramètres HubSpot dans le fichier de configuration
+
+## Développement
+
+Le projet utilise :
+- Maven pour la gestion des dépendances Java
+- Yarn pour les dépendances frontend
+- PrimeReact pour les composants UI
