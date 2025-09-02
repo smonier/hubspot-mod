@@ -34,3 +34,9 @@ buildNumber.properties
 /.project
 /.settings/
 .DS_Store
+
+# Security - Credentials and configuration files
+# Prevent accidental commit of real credentials
+**/configurations/*credentials*.cfg
+# Keep the template file with empty values
+!**/configurations/org.jahia.se.modules.hubspot.credentials.cfg
