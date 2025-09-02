@@ -159,7 +159,6 @@ public class HubSpotServiceImpl implements HubSpotService {
         String fullUrl = getFormsEndpointUrl();
 
         LOGGER.info("Calling HubSpot forms endpoint: {}", fullUrl);
-        LOGGER.info("Using token: {}", defaultAuthorization); // ⚠️ Remove this after debugging
 
         HttpURLConnection connection = (HttpURLConnection) new URL(fullUrl).openConnection();
         connection.setRequestMethod("GET");
